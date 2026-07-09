@@ -2,9 +2,8 @@ name: Gunluk Haber Botu
 
 on:
   schedule:
-    # Türkiye (UTC+3) saatine göre her sabah 08:00'de çalışır
     - cron: '0 5 * * *'
-  workflow_dispatch: # Test için manuel çalıştırma butonu ekler
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -12,10 +11,10 @@ jobs:
 
     steps:
     - name: Kodları Çek
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4  # v3'ten v4'e güncellendi
 
     - name: Python Ortamını Kur
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5  # v4'ten v5'e güncellendi
       with:
         python-version: '3.10'
 
