@@ -8,13 +8,12 @@ def kategorili_haberleri_cek():
     # İngilizce ve Türkçe kaynakların karmaşık (mixed) listesi
     kategori_kaynaklari = {
     "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
-    "Bulut Bilişim ve Kurumsal Altyapı": "https://www.zdnet.com/news/rss.xml",
-    "IT Liderliği ve Teknoloji Stratejisi": "https://www.cio.com/feed/",
-    "Yerel Bilişim ve İş Dünyası": "https://webrazzi.com/feed/"
+    "Global Teknoloji": "https://shiftdelete.net/feed",
+    "Yapay Zeka:" "https://techcrunch.com/category/artificial-intelligence/feed/"
     }
     
     kategorize_haberler = {}
-    kategori_basi_haber = 3 # 4 kategori x 3 haber = Toplam 12 haberlik ideal bir bülten
+    kategori_basi_haber = 4
     
     for kategori_adi, rss_link in kategori_kaynaklari.items():
         kategorize_haberler[kategori_adi] = []
