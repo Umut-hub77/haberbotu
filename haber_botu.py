@@ -9,7 +9,7 @@ def kategorili_haberleri_cek():
     kategori_kaynaklari = {
         "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
         "Global Teknoloji": "https://shiftdelete.net/feed/",
-        "Yapay Zeka": "https://shiftdelete.net/rss"
+        "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/"
     }
     kategorize_haberler = {}
     kategori_basi_haber = 4
