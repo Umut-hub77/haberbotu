@@ -6,12 +6,11 @@ from email.mime.text import MIMEText
 
 def kategorili_haberleri_cek():
     # İngilizce ve Türkçe kaynakların karmaşık (mixed) listesi
-    kategori_kaynaklari = {
-    "Kurumsal Güvenlik ve Tehdit İstihbaratı:" "https://www.bleepingcomputer.com/feed/",
-    "Global Teknoloji:" "https://shiftdelete.net/feed",
-    "Yapay Zeka:" "https://techcrunch.com/category/artificial-intelligence/feed/"
+kategori_kaynaklari = {
+        "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
+        "Global Teknoloji": "https://shiftdelete.net/feed",
+        "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/"
     }
-    
     kategorize_haberler = {}
     kategori_basi_haber = 4
     
