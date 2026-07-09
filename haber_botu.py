@@ -1,24 +1,60 @@
+import feedparser
 import smtplib
+import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def mail_gonder(haber_listesi, alici_listesi):
-    # Kendi e-posta bilgilerin (Gmail kullanıyorsan "App Passwords" oluşturman gerekir)
-    GONDEREN_MAIL = "seninmailin@gmail.com"
-    GONDEREN_SIFRE = "uygulama_sifresi_buraya"
+def gercek_haberleri_cek():
+    # Dünyanın en büyük teknoloji ve iş dünyası haber kaynakları (RSS Feed'ler)
+    rss_kaynaklari = [
+        "https://techcrunch.com/feed/",                                        # Big Tech ve Girişimler
+        "https://www.theverge.com/rss/index.xml",                              # Teknoloji Devleri ve Tüketici
+        "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910" # CNBC Tech (İş dünyası odaklı)
+    ]
+    
+    cekilen_haberler = []
+    kaynak_basi_haber_sayisi = 5 # 3 kaynaktan 5'er haber = Toplam 15 haber
+    
+    for kaynak in rss_kaynaklari:
+        try:
+            feed = feedparser.parse(kaynak)
+            sayac = 0
+            for entry in feed.entries:
+                if sayac >= kaynak_basi_haber_sayisi:
+                    break
+                
+                cekilen_haberler.append({
+                    "baslik": entry.title,
+                    "link": entry.link
+                })
+                sayac += 1
+        except Exception as e:
+            print(f"Haber çekilirken hata oluştu ({kaynak}): {e}")
+            
+    return cekilen_haberler
+
+def mail_gonder(haber_listesi):
+    GONDEREN_MAIL = os.environ.get("GMAIL_USER")
+    GONDEREN_SIFRE = os.environ.get("GMAIL_PASS")
+    ALICILAR_STRING = os.environ.get("ALICI_EMAILLER")
+    
+    if not ALICILAR_STRING:
+        print("Alıcı e-posta listesi bulunamadı!")
+        return
+
+    alici_listesi = ALICILAR_STRING.split(",")
     
     # 1. HTML İçeriğini Dinamik Oluşturma
     html_icerik = """
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Günlük Teknoloji Özeti</h2>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <h2 style="color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-top: 0;">Dünya Teknoloji Gündemi</h2>
     """
     
-    # Haberleri tek tek HTML şablonuna ekliyoruz (Sadece başlık ve link)
     for haber in haber_listesi:
         html_icerik += f"""
-        <div style="padding: 15px 0; border-bottom: 1px solid #e0e0e0;">
-            <h3 style="margin: 0 0 8px 0; color: #1a1a1a; font-size: 18px;">{haber['baslik']}</h3>
-            <a href="{haber['link']}" style="color: #007bff; text-decoration: none; font-weight: bold; font-size: 14px;">Haberi Oku &rarr;</a>
+        <div style="padding: 20px 0; border-bottom: 1px solid #f0f0f0;">
+            <h3 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 17px; line-height: 1.4;">{haber['baslik']}</h3>
+            <a href="{haber['link']}" style="display: inline-block; color: #ffffff; background-color: #3498db; text-decoration: none; font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px;">Haberi Oku</a>
         </div>
         """
     
@@ -26,36 +62,31 @@ def mail_gonder(haber_listesi, alici_listesi):
 
     # 2. E-posta Paketini Hazırlama
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "Günün Öne Çıkan Teknoloji Haberleri"
+    msg['Subject'] = "🌍 Küresel Teknoloji Gündemi: Öne Çıkan Gelişmeler"
     msg['From'] = GONDEREN_MAIL
     
-    # MIMEText ile HTML formatını tanımlıyoruz
     part = MIMEText(html_icerik, 'html')
     msg.attach(part)
 
     # 3. SMTP Sunucusuna Bağlanıp Gönderme
     try:
-        # Gmail için SMTP ayarları (Port 587)
         server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls() # Güvenli bağlantı başlat
+        server.starttls()
         server.login(GONDEREN_MAIL, GONDEREN_SIFRE)
-        
-        # BCC mantığı ile herkese gönder (Herkes e-postayı sadece kendine gelmiş gibi görür)
         server.sendmail(GONDEREN_MAIL, alici_listesi, msg.as_string())
         server.quit()
-        print("E-postalar başarıyla gönderildi!")
+        print(f"{len(haber_listesi)} adet küresel haber başarıyla gönderildi!")
         
     except Exception as e:
-        print(f"Hata oluştu: {e}")
+        print(f"Mail gönderilirken hata oluştu: {e}")
 
-# Sistemi Test Etme
-ornek_haberler = [
-    {"baslik": "Apple, yeni işletim sistemi güncellemelerini duyurdu", "link": "https://ornek.com/haber1"},
-    {"baslik": "NVIDIA, yapay zeka odaklı yeni çiplerini tanıttı", "link": "https://ornek.com/haber2"},
-    {"baslik": "Avrupa Birliği'nden teknoloji devlerine yeni regülasyon", "link": "https://ornek.com/haber3"}
-]
-
-# Hedef 3 kişi
-alici_listesi = ["kisi1@email.com", "kisi2@email.com", "kisi3@email.com"]
-
-mail_gonder(ornek_haberler, alici_listesi)
+# Sistemin ana çalışma akışı
+if __name__ == "__main__":
+    print("Dünya çapında haberler toplanıyor...")
+    bugunun_haberleri = gercek_haberleri_cek()
+    
+    if len(bugunun_haberleri) > 0:
+        print(f"Toplam {len(bugunun_haberleri)} haber bulundu. Mailler hazırlanıyor...")
+        mail_gonder(bugunun_haberleri)
+    else:
+        print("Haber çekilemediği için mail gönderilmedi.")
