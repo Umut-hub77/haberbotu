@@ -36,7 +36,7 @@ def gercek_haberleri_cek():
 def mail_gonder(haber_listesi):
     GONDEREN_MAIL = os.environ.get("GMAIL_USER")
     GONDEREN_SIFRE = os.environ.get("GMAIL_PASS")
-    ALICILAR_STRING = os.environ.get("ALICI_EMAILLER")
+    ALICILAR_STRING = os.environ.get("ALICI_MAILLER")
     
     if not ALICILAR_STRING:
         print("Alıcı e-posta listesi bulunamadı!")
