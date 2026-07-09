@@ -7,10 +7,10 @@ from email.mime.text import MIMEText
 def kategorili_haberleri_cek():
     # İngilizce ve Türkçe kaynakların karmaşık (mixed) listesi
     kategori_kaynaklari = {
-        "🔒 Siber Güvenlik (EN)": "https://feeds.feedburner.com/TheHackersNews",
-        "🇹🇷 Global Teknoloji (TR)": "https://shiftdelete.net/feed",
-        "🤖 Yapay Zeka (EN)": "https://techcrunch.com/category/artificial-intelligence/feed/",
-        "🇹🇷 Donanım & Bilim (TR)": "https://www.donanimhaber.com/rss/tum"
+        "Siber Güvenlik": "https://feeds.feedburner.com/TheHackersNews",
+        "Global Teknoloji": "https://shiftdelete.net/feed",
+        "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/",
+        "Donanım & Bilim": "https://www.donanimhaber.com/rss/tum"
     }
     
     kategorize_haberler = {}
@@ -72,7 +72,7 @@ def mail_gonder(kategorize_haberler):
     html_icerik += "</div>"
 
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "🌍 TechPulse Gündemi: Siber Güvenlik, AI ve Küresel Gelişmeler"
+    msg['Subject'] = "Gündem: Siber Güvenlik, AI ve Küresel Gelişmeler"
     msg['From'] = GONDEREN_MAIL
     
     part = MIMEText(html_icerik, 'html')
