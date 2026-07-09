@@ -4,89 +4,92 @@ import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-def gercek_haberleri_cek():
-    # Dünyanın en büyük teknoloji ve iş dünyası haber kaynakları (RSS Feed'ler)
-    rss_kaynaklari = [
-        "https://techcrunch.com/feed/",                                        # Big Tech ve Girişimler
-        "https://www.theverge.com/rss/index.xml",                              # Teknoloji Devleri ve Tüketici
-        "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19854910" # CNBC Tech (İş dünyası odaklı)
-    ]
+def kategorili_haberleri_cek():
+    # İngilizce ve Türkçe kaynakların karmaşık (mixed) listesi
+    kategori_kaynaklari = {
+        "🔒 Siber Güvenlik (EN)": "https://feeds.feedburner.com/TheHackersNews",
+        "🇹🇷 Global Teknoloji (TR)": "https://shiftdelete.net/feed",
+        "🤖 Yapay Zeka (EN)": "https://techcrunch.com/category/artificial-intelligence/feed/",
+        "🇹🇷 Donanım & Bilim (TR)": "https://www.donanimhaber.com/rss/tum"
+    }
     
-    cekilen_haberler = []
-    kaynak_basi_haber_sayisi = 5 # 3 kaynaktan 5'er haber = Toplam 15 haber
+    kategorize_haberler = {}
+    kategori_basi_haber = 3 # 4 kategori x 3 haber = Toplam 12 haberlik ideal bir bülten
     
-    for kaynak in rss_kaynaklari:
+    for kategori_adi, rss_link in kategori_kaynaklari.items():
+        kategorize_haberler[kategori_adi] = []
         try:
-            feed = feedparser.parse(kaynak)
+            feed = feedparser.parse(rss_link)
             sayac = 0
             for entry in feed.entries:
-                if sayac >= kaynak_basi_haber_sayisi:
+                if sayac >= kategori_basi_haber:
                     break
                 
-                cekilen_haberler.append({
+                kategorize_haberler[kategori_adi].append({
                     "baslik": entry.title,
                     "link": entry.link
                 })
                 sayac += 1
         except Exception as e:
-            print(f"Haber çekilirken hata oluştu ({kaynak}): {e}")
+            print(f"Hata ({kategori_adi} çekilemedi): {e}")
             
-    return cekilen_haberler
+    return kategorize_haberler
 
-def mail_gonder(haber_listesi):
+def mail_gonder(kategorize_haberler):
     GONDEREN_MAIL = os.environ.get("GMAIL_USER")
     GONDEREN_SIFRE = os.environ.get("GMAIL_PASS")
     ALICILAR_STRING = os.environ.get("ALICI_EMAILLER")
     
     if not ALICILAR_STRING:
-        print("Alıcı e-posta listesi bulunamadı!")
+        print("Alıcı listesi bulunamadı!")
         return
 
     alici_listesi = ALICILAR_STRING.split(",")
     
-    # 1. HTML İçeriğini Dinamik Oluşturma
     html_icerik = """
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <h2 style="color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-top: 0;">Dünya Teknoloji Gündemi</h2>
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #2c3e50; margin: 0; font-size: 28px;">TechPulse</h1>
+            <p style="color: #7f8c8d; margin-top: 5px; font-size: 14px;">Günlük Teknoloji Özeti (EN & TR)</p>
+        </div>
     """
     
-    for haber in haber_listesi:
-        html_icerik += f"""
-        <div style="padding: 20px 0; border-bottom: 1px solid #f0f0f0;">
-            <h3 style="margin: 0 0 12px 0; color: #1a1a1a; font-size: 17px; line-height: 1.4;">{haber['baslik']}</h3>
-            <a href="{haber['link']}" style="display: inline-block; color: #ffffff; background-color: #3498db; text-decoration: none; font-weight: 600; font-size: 13px; padding: 8px 16px; border-radius: 6px;">Haberi Oku</a>
-        </div>
-        """
+    for kategori, haberler in kategorize_haberler.items():
+        if len(haberler) > 0:
+            html_icerik += f"""
+            <div style="background-color: #f8f9fa; padding: 10px 15px; border-left: 4px solid #3498db; margin: 25px 0 15px 0;">
+                <h2 style="margin: 0; color: #2c3e50; font-size: 18px;">{kategori}</h2>
+            </div>
+            """
+            for haber in haberler:
+                html_icerik += f"""
+                <div style="padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+                    <h3 style="margin: 0 0 10px 0; color: #1a1a1a; font-size: 16px; line-height: 1.4;">{haber['baslik']}</h3>
+                    <a href="{haber['link']}" style="display: inline-block; color: #ffffff; background-color: #3498db; text-decoration: none; font-weight: 600; font-size: 12px; padding: 6px 14px; border-radius: 4px;">Haberi Oku</a>
+                </div>
+                """
     
     html_icerik += "</div>"
 
-    # 2. E-posta Paketini Hazırlama
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = "🌍 Küresel Teknoloji Gündemi: Öne Çıkan Gelişmeler"
+    msg['Subject'] = "🌍 TechPulse Gündemi: Siber Güvenlik, AI ve Küresel Gelişmeler"
     msg['From'] = GONDEREN_MAIL
     
     part = MIMEText(html_icerik, 'html')
     msg.attach(part)
 
-    # 3. SMTP Sunucusuna Bağlanıp Gönderme
     try:
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
         server.login(GONDEREN_MAIL, GONDEREN_SIFRE)
         server.sendmail(GONDEREN_MAIL, alici_listesi, msg.as_string())
         server.quit()
-        print(f"{len(haber_listesi)} adet küresel haber başarıyla gönderildi!")
+        print("İngilizce-Türkçe karışık bülten başarıyla gönderildi!")
         
     except Exception as e:
         print(f"Mail gönderilirken hata oluştu: {e}")
 
-# Sistemin ana çalışma akışı
 if __name__ == "__main__":
-    print("Dünya çapında haberler toplanıyor...")
-    bugunun_haberleri = gercek_haberleri_cek()
-    
-    if len(bugunun_haberleri) > 0:
-        print(f"Toplam {len(bugunun_haberleri)} haber bulundu. Mailler hazırlanıyor...")
-        mail_gonder(bugunun_haberleri)
-    else:
-        print("Haber çekilemediği için mail gönderilmedi.")
+    print("Karma dilde haberler toplanıyor...")
+    haber_havuzu = kategorili_haberleri_cek()
+    mail_gonder(haber_havuzu)
