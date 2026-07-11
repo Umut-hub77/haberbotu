@@ -1,8 +1,7 @@
 name: Gunluk Haber Botu
 
 on:
-  schedule:
-    - cron: '30 8 * * *'
+
   workflow_dispatch: 
 
 jobs:
