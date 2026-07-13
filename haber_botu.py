@@ -5,7 +5,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 def kategorili_haberleri_cek():
-    # İngilizce ve Türkçe kaynakların karmaşık (mixed) listesi
     kategori_kaynaklari = {
         "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
         "Global Teknoloji": "https://shiftdelete.net/feed/",
@@ -13,7 +12,7 @@ def kategorili_haberleri_cek():
         "Dev Şirketler": "https://venturebeat.com/category/ai/feed/"
     }
     kategorize_haberler = {}
-    kategori_basi_haber = 4
+    kategori_basi_haber = 3
     
     for kategori_adi, rss_link in kategori_kaynaklari.items():
         kategorize_haberler[kategori_adi] = []
