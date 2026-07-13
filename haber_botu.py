@@ -47,8 +47,7 @@ def mail_gonder(kategorize_haberler):
     html_icerik = """
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
         <div style="text-align: center; margin-bottom: 20px;">
-            <h1 style="color: #2c3e50; margin: 0; font-size: 28px;">TechPulse</h1>
-            <p style="color: #7f8c8d; margin-top: 5px; font-size: 14px;">Günlük Teknoloji Özeti (EN & TR)</p>
+            <h1 style="color: #2c3e50; margin: 0; font-size: 28px;">Teknoloji Haberleri</h1>
         </div>
     """
     
