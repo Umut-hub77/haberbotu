@@ -29,7 +29,7 @@ KATEGORI_KAYNAKLARI = {
     "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
     "Global Teknoloji": "https://shiftdelete.net/feed/",
     "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "Dev Şirketler": "https://venturebeat.com/category/ai/feed/",
+    "Veri": "https://venturebeat.com/category/data",
 }
 
 KATEGORI_BASI_HABER = 3
