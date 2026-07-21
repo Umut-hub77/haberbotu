@@ -1,8 +1,3 @@
-"""
-Teknoloji Haber Bülteni
-RSS kaynaklarından haber çeker ve HTML e-posta olarak gönderir.
-"""
-
 import html
 import logging
 import os
@@ -20,9 +15,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# RSS istekleri için varsayılan soket zaman aşımı (saniye).
-# feedparser kendi timeout parametresini desteklemez; global socket
-# timeout'u kullanmak gerekir.
 RSS_TIMEOUT_SANIYE = 10
 
 KATEGORI_KAYNAKLARI = {
@@ -36,10 +28,6 @@ KATEGORI_BASI_HABER = 3
 
 
 def kategorili_haberleri_cek() -> dict:
-    """Her kategori için RSS akışından en güncel haberleri çeker.
-
-    Aynı link'e sahip haberler tekrar eklenmez.
-    """
     kategorize_haberler = {}
     eski_timeout = socket.getdefaulttimeout()
     socket.setdefaulttimeout(RSS_TIMEOUT_SANIYE)
