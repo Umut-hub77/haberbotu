@@ -20,8 +20,8 @@ RSS_TIMEOUT_SANIYE = 10
 KATEGORI_KAYNAKLARI = {
     "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
     "Global Teknoloji": "https://shiftdelete.net/feed/",
-    "Yapay Zeka": "www.reuters.com/technology/artificial-intelligence/feed/",
-    "Kurumsal Uygulamalar": "www.cio.com/enterprise/feed/",
+    "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "Kurumsal Uygulamalar": "https://www.itnetwork.com.tr/kategori/kurumsal-uygulamalar/feed",
 }
 
 KATEGORI_BASI_HABER = 3
