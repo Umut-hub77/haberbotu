@@ -235,6 +235,8 @@ def html_bulten_olustur(kategorize_haberler: dict) -> str:
             "September": "Eylül", "October": "Ekim", "November": "Kasım", "December": "Aralık",
         }[datetime.now().strftime("%B")]
     )
+    toplam_haber = sum(len(v) for v in kategorize_haberler.values())
+    haber_var_mi = toplam_haber > 0
 
     icerik = _haber_bloklari_olustur(kategorize_haberler) if haber_var_mi else """
         <tr><td style="padding: 40px 0; color: #6b7280; font-size: 14px; text-align:center;">
