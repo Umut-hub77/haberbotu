@@ -21,10 +21,9 @@ KATEGORI_KAYNAKLARI = {
     "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
     "Global Teknoloji": "https://shiftdelete.net/feed/",
     "Yapay Zeka": "https://techcrunch.com/category/artificial-intelligence/feed/",
-    "IT Yöneticiliği": "https://www.computerweekly.com/resources/CW500-and-IT-leadership-skills/feed/",
 }
 
-KATEGORI_BASI_HABER = 3
+KATEGORI_BASI_HABER = 4
 
 
 def kategorili_haberleri_cek() -> dict:
