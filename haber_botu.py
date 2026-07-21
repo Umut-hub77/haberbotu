@@ -6,7 +6,7 @@ import socket
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-
+from email.utils import formatdate, make_msgid
 import feedparser
 
 logging.basicConfig(
@@ -177,6 +177,35 @@ def mail_gonder(kategorize_haberler: dict) -> bool:
     if not any(kategorize_haberler.values()):
         logger.warning("Hiçbir kategoride haber bulunamadı; e-posta gönderilmeyecek")
         return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
+    msg["From"] = gonderen_mail
+    msg["To"] = ", ".join(alici_listesi)
+    
+    # OUTLOOK İÇİN KRİTİK EKLENTİLER:
+    msg["Date"] = formatdate(localtime=True)
+    msg["Message-ID"] = make_msgid()
+
+    msg.attach(MIMEText(duz_metin_bulten_olustur(kategorize_haberler), "plain", "utf-8"))
+    msg.attach(MIMEText(html_bulten_olustur(kategorize_haberler), "html", "utf-8"))
+
+    try:
+        # HATALI KISIM DÜZELTİLDİ: Sadece 587 portu kullanılmalı
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
+            server.ehlo() # Sunucuya merhaba de (Outlook filtreleri için faydalıdır)
+            server.starttls()
+            server.login(gonderen_mail, gonderen_sifre)
+            server.sendmail(gonderen_mail, alici_listesi, msg.as_string())
+            
+        logger.info("Bülten %d alıcıya gönderildi", len(alici_listesi))
+        return True
+    except smtplib.SMTPAuthenticationError:
+        logger.error("SMTP kimlik doğrulama hatası: kullanıcı adı/şifre (uygulama şifresi) hatalı")
+    except (smtplib.SMTPException, OSError) as e:
+        logger.error("Mail gönderilirken hata oluştu: %s", e)
+
+    return False
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
