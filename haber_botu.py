@@ -181,8 +181,12 @@ def mail_gonder(kategorize_haberler: dict) -> bool:
     msg = MIMEMultipart("alternative")
     msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
     msg["From"] = gonderen_mail
-    msg["To"] = ", ".join(alici_listesi)
-    
+    # BCC gönderimi: "To" alanına gerçek alıcılar yazılmaz, aksi halde
+    # herkes diğer alıcıların adresini görür. Gerçek alıcı listesi sadece
+    # sendmail() çağrısındaki zarf (envelope) adresleri olarak kullanılır,
+    # mesaj başlıklarında görünmez -> bu BCC davranışıdır.
+    msg["To"] = gonderen_mail
+
     # OUTLOOK İÇİN KRİTİK EKLENTİLER:
     msg["Date"] = formatdate(localtime=True)
     msg["Message-ID"] = make_msgid()
@@ -193,34 +197,15 @@ def mail_gonder(kategorize_haberler: dict) -> bool:
     try:
         # HATALI KISIM DÜZELTİLDİ: Sadece 587 portu kullanılmalı
         with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
-            server.ehlo() # Sunucuya merhaba de (Outlook filtreleri için faydalıdır)
+            server.ehlo()  # Sunucuya merhaba de (Outlook filtreleri için faydalıdır)
             server.starttls()
             server.login(gonderen_mail, gonderen_sifre)
+            # sendmail'e verilen alıcı listesi, mesajın içindeki
+            # başlıklardan bağımsız gerçek zarf (envelope) alıcılarıdır.
+            # Bu sayede alıcılar birbirinin adresini göremez (BCC).
             server.sendmail(gonderen_mail, alici_listesi, msg.as_string())
-            
-        logger.info("Bülten %d alıcıya gönderildi", len(alici_listesi))
-        return True
-    except smtplib.SMTPAuthenticationError:
-        logger.error("SMTP kimlik doğrulama hatası: kullanıcı adı/şifre (uygulama şifresi) hatalı")
-    except (smtplib.SMTPException, OSError) as e:
-        logger.error("Mail gönderilirken hata oluştu: %s", e)
 
-    return False
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
-    msg["From"] = gonderen_mail
-    msg["To"] = ", ".join(alici_listesi)
-
-    msg.attach(MIMEText(duz_metin_bulten_olustur(kategorize_haberler), "plain", "utf-8"))
-    msg.attach(MIMEText(html_bulten_olustur(kategorize_haberler), "html", "utf-8"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
-            server.starttls()
-            server.login(gonderen_mail, gonderen_sifre)
-            server.sendmail(gonderen_mail, alici_listesi, msg.as_string())
-        logger.info("Bülten %d alıcıya gönderildi", len(alici_listesi))
+        logger.info("Bülten %d alıcıya (BCC) gönderildi", len(alici_listesi))
         return True
     except smtplib.SMTPAuthenticationError:
         logger.error("SMTP kimlik doğrulama hatası: kullanıcı adı/şifre (uygulama şifresi) hatalı")
