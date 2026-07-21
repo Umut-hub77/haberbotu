@@ -178,17 +178,14 @@ def mail_gonder(kategorize_haberler: dict) -> bool:
         logger.warning("Hiçbir kategoride haber bulunamadı; e-posta gönderilmeyecek")
         return False
 
-msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = f"Teknoloji Bülteni - {datetime.now().strftime('%d.%m.%Y')}"
     msg["From"] = gonderen_mail
     msg["To"] = ", ".join(alici_listesi)
     
-    # Standart Başlıklar
+    # OUTLOOK İÇİN KRİTİK EKLENTİLER:
     msg["Date"] = formatdate(localtime=True)
     msg["Message-ID"] = make_msgid()
-    
-    # Güven Başlıkları (Spam Puanını Düşürür)
-    msg["Reply-To"] = gonderen_mail
-    msg["List-Unsubscribe"] = f"<mailto:{gonderen_mail}?subject=unsubscribe>"
 
     msg.attach(MIMEText(duz_metin_bulten_olustur(kategorize_haberler), "plain", "utf-8"))
     msg.attach(MIMEText(html_bulten_olustur(kategorize_haberler), "html", "utf-8"))
