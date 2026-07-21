@@ -8,6 +8,7 @@ import logging
 import os
 import smtplib
 import socket
+import time
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -25,7 +26,20 @@ logger = logging.getLogger(__name__)
 # RSS istekleri için varsayılan soket zaman aşımı (saniye).
 # feedparser kendi timeout parametresini desteklemez; global socket
 # timeout'u kullanmak gerekir.
-RSS_TIMEOUT_SANIYE = 10
+RSS_TIMEOUT_SANIYE = 15
+
+# Bazı siteler (ör. Cloudflare korumalı) User-Agent göndermeyen istekleri
+# engelliyor veya boş/hatalı içerik döndürüyor. Gerçek bir tarayıcı gibi
+# görünmek bu tür engellemeleri büyük ölçüde azaltıyor.
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+
+# Geçici ağ hatalarına (timeout, 403, boş yanıt vb.) karşı her kaynak
+# için yapılacak toplam deneme sayısı.
+MAX_DENEME = 3
+DENEME_ARASI_SANIYE = 3
 
 KATEGORI_KAYNAKLARI = {
     "Kurumsal Güvenlik ve Tehdit İstihbaratı": "https://www.bleepingcomputer.com/feed/",
@@ -71,10 +85,68 @@ def _tarih_formatla(ham_tarih: str | None) -> str:
         return ""
 
 
+def _kaynagi_dene(kategori_adi: str, rss_link: str) -> list:
+    """Tek bir RSS kaynağını, geçici hatalara karşı birkaç kez deneyerek çeker.
+
+    Boş/hatalı yanıt (403, timeout, engelleme vb.) alınırsa kısa bir
+    bekleme sonrası tekrar dener; tüm denemeler başarısız olursa boş
+    liste döner ve hata loglanır.
+    """
+    son_hata = None
+
+    for deneme in range(1, MAX_DENEME + 1):
+        try:
+            feed = feedparser.parse(rss_link, agent=USER_AGENT)
+
+            http_durumu = getattr(feed, "status", None)
+            if http_durumu is not None and http_durumu >= 400:
+                raise ConnectionError(f"HTTP {http_durumu} yanıtı alındı")
+
+            if feed.bozo and not feed.entries:
+                raise feed.bozo_exception or ValueError("Akış ayrıştırılamadı")
+
+            if not feed.entries:
+                raise ValueError("Akışta hiç haber bulunamadı (boş yanıt)")
+
+            haberler = []
+            gorulen_linkler = set()
+
+            for entry in feed.entries:
+                if len(haberler) >= KATEGORI_BASI_HABER:
+                    break
+
+                baslik = getattr(entry, "title", None)
+                link = getattr(entry, "link", None)
+                if not baslik or not link or link in gorulen_linkler:
+                    continue
+
+                gorulen_linkler.add(link)
+                haberler.append({
+                    "baslik": baslik.strip(),
+                    "link": link.strip(),
+                    "yayin_tarihi": getattr(entry, "published", None),
+                })
+
+            return haberler
+
+        except Exception as e:
+            son_hata = e
+            if deneme < MAX_DENEME:
+                logger.warning(
+                    "%s: %d. deneme başarısız (%s), tekrar denenecek...",
+                    kategori_adi, deneme, e,
+                )
+                time.sleep(DENEME_ARASI_SANIYE)
+
+    logger.error("%s kaynağı %d denemede de çekilemedi: %s", kategori_adi, MAX_DENEME, son_hata)
+    return []
+
+
 def kategorili_haberleri_cek() -> dict:
     """Her kategori için RSS akışından en güncel haberleri çeker.
 
-    Aynı link'e sahip haberler tekrar eklenmez.
+    Aynı link'e sahip haberler tekrar eklenmez. Geçici ağ hatalarına karşı
+    her kaynak birkaç kez denenir.
     """
     kategorize_haberler = {}
     eski_timeout = socket.getdefaulttimeout()
@@ -82,70 +154,13 @@ def kategorili_haberleri_cek() -> dict:
 
     try:
         for kategori_adi, rss_link in KATEGORI_KAYNAKLARI.items():
-            haberler = []
-            gorulen_linkler = set()
-
-            try:
-                feed = feedparser.parse(rss_link)
-
-                if feed.bozo and not feed.entries:
-                    raise feed.bozo_exception or ValueError("Akış ayrıştırılamadı")
-
-                for entry in feed.entries:
-                    if len(haberler) >= KATEGORI_BASI_HABER:
-                        break
-
-                    baslik = getattr(entry, "title", None)
-                    link = getattr(entry, "link", None)
-                    if not baslik or not link or link in gorulen_linkler:
-                        continue
-
-                    gorulen_linkler.add(link)
-                    haberler.append({
-                        "baslik": baslik.strip(),
-                        "link": link.strip(),
-                        "yayin_tarihi": getattr(entry, "published", None),
-                    })
-
-                logger.info("%s: %d haber çekildi", kategori_adi, len(haberler))
-
-            except Exception as e:
-                logger.error("%s kaynağı çekilemedi: %s", kategori_adi, e)
-
+            haberler = _kaynagi_dene(kategori_adi, rss_link)
+            logger.info("%s: %d haber çekildi", kategori_adi, len(haberler))
             kategorize_haberler[kategori_adi] = haberler
     finally:
         socket.setdefaulttimeout(eski_timeout)
 
     return kategorize_haberler
-
-
-def _ozet_seridi_olustur(kategorize_haberler: dict) -> str:
-    """Üst kısımda kategori başına haber sayısını gösteren kompakt özet."""
-    hucreler = ""
-    for kategori, haberler in kategorize_haberler.items():
-        if not haberler:
-            continue
-        renk = KATEGORI_RENKLERI.get(kategori, VARSAYILAN_RENK)
-        hucreler += f"""
-        <td style="padding: 0 8px 0 0;">
-            <table role="presentation" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td style="background-color: #f8f9fb; border: 1px solid #e8eaee; border-radius: 5px; padding: 7px 12px;">
-                        <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background-color:{renk}; margin-right:6px; vertical-align:middle;"></span>
-                        <span style="font-size: 12px; color: #4b5563; font-weight: 600; vertical-align:middle;">{html.escape(kategori)}</span>
-                        <span style="font-size: 12px; color: #9ca3af; vertical-align:middle;"> · {len(haberler)}</span>
-                    </td>
-                </tr>
-            </table>
-        </td>
-        """
-    return f"""
-    <tr>
-        <td style="padding: 18px 32px 0 32px;">
-            <table role="presentation" cellpadding="0" cellspacing="0"><tr>{hucreler}</tr></table>
-        </td>
-    </tr>
-    """
 
 
 def _haber_bloklari_olustur(kategorize_haberler: dict) -> str:
@@ -223,7 +238,6 @@ def html_bulten_olustur(kategorize_haberler: dict) -> str:
     toplam_haber = sum(len(v) for v in kategorize_haberler.values())
     haber_var_mi = toplam_haber > 0
 
-    ozet = _ozet_seridi_olustur(kategorize_haberler) if haber_var_mi else ""
     icerik = _haber_bloklari_olustur(kategorize_haberler) if haber_var_mi else """
         <tr><td style="padding: 40px 0; color: #6b7280; font-size: 14px; text-align:center;">
             Bugün için görüntülenecek haber bulunamadı.
@@ -255,9 +269,8 @@ def html_bulten_olustur(kategorize_haberler: dict) -> str:
                             </table>
                         </td>
                     </tr>
-                    {ozet}
                     <tr>
-                        <td style="padding: 8px 32px 24px 32px;">
+                        <td style="padding: 18px 32px 24px 32px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 {icerik}
                             </table>
